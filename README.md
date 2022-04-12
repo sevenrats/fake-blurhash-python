@@ -1,4 +1,23 @@
-# blurhash-python
+# fake-blurhash-python
+
+This is a modified version of Lorenz Diener's blurhash library, extended to demonstrate a novel decoding algorithm.
+This code uses spec blurhashes, so your existing blurhash infrastructure will work, unmodified. Instead of calculating every single pixel, we:
+ - Calculate a single pixel at the center of each element
+ - Store the centerpoint and evaluated color in a list of (x, y, (R,G,B)) tuples.
+
+ An example of rendering this data:
+ - render each element as a solid tile with the sampled color.
+ - apply gaussian blur to the composited image with a radius equal to 1/4 of the tile width
+ 
+ My hope is that this psuedo-implementation will provide a guide to bring blurhash's functionality to low power devices,
+ as it can be done with very simple drawing fundamentals.
+
+ Please see the source code for full details, and test it on your existing blurhashes!
+
+ Credit and thanks to:
+ Dag Ågren https://github.com/DagAgren
+ Lorenz Diener https://github.com/halcy
+
 ```python
 import blurhash
 import PIL.Image
@@ -12,21 +31,41 @@ PIL.Image.open("cool_cat_small.jpg")
 blurhash.encode(numpy.array(PIL.Image.open("cool_cat_small.jpg").convert("RGB")))
 # Result: 'UBL_:rOpGG-oBUNG,qRj2so|=eE1w^n4S5NH'
 
-PIL.Image.fromarray(numpy.array(blurhash.decode('UBL_:rOpGG-oBUNG,qRj2so|=eE1w^n4S5NH', 128, 128)).astype('uint8'))
+#Compare the original pure python implementation:
+blurhash.show('UBL_:rOpGG-oBUNG,qRj2so|=eE1w^n4S5NH', 128,128, show_time=True)
 # Result:
+# Decode Time:  2.5773730278015137
+# Draw Time:  2.62654185295105
+
 ```
 ![Blurhash example output: A blurred cool cat.](/blurhash_example.png?raw=true "Blurhash example output: A blurred cool cat.")
-    
-Blurhash is an algorithm that lets you transform image data into a small text representation of a blurred version of the image. This is useful since this small textual representation can be included when sending objects that may have images attached around, which then can be used to quickly create a placeholder for images that are still loading or that should be hidden behind a content warning.
 
-This library contains a pure-python implementation of the blurhash algorithm, closely following the original swift implementation by Dag Ågren. The module has no dependencies (the unit tests require PIL and numpy). You can install it via pip:
+```python
+# To the fake version:
+blurhash.show_fake('UBL_:rOpGG-oBUNG,qRj2so|=eE1w^n4S5NH', 128,128, show_time=True)
+# Result:
+# Decode Time:  0.0025682449340820312
+# Draw Time:  0.03584718704223633
 
-```bash
-$ pip3 install blurhash
+
 ```
+![Blurhash example output: An IMPOSTER blurred cool cat.](/fake_blurhash_example_bd4.png?raw=true "Blurhash example output: An IMPOSTER blurred cool cat.")
 
-It exports five functions:
-* "encode" and "decode" do the actual en- and decoding of blurhash strings
+You can fine-tune your own implementation by changing the relationship between the tile size and the blur radius:
+
+![Blurhash example output: An IMPOSTER blurred cool cat.](/fake_blurhash_example_bd3.png?raw=true "Blurhash example output: An IMPOSTER blurred cool cat.")
+    
+Blurhash is an algorithm that lets you transform image data into a small text representation of a blurred version of the image. This is useful since this small textual representation can be included when sending objects that may have images attached around, which then can be used to quickly create a placeholder for images that are still loading or that should be hidden behind a content warning. https://github.com/woltapp/blurhash
+
+This library contains a pure-python implementation of the blurhash algorithm by Lorenz Diener, closely following the original swift implementation by Dag Ågren. It was further extended to demonstrate this novel pseudo-implementation in the hopes of bringing blurhash's functionality to low-power devices.
+
+The drawing implementation in this library's "show_fake" function is solely for the purpose of visualizing the faked blurhash, it has not been optimized in any way.
+
+
+It exports eight functions:
+* "encode" to do the actual encoding of blurhash strings
+* "decode" and "fake_decode" to generate drawable data from the blurhash
+* "show" and "show_fake" to illustrate the appearance of each implementation
 * "components" returns the number of components x- and y components of a blurhash
 * "srgb_to_linear" and "linear_to_srgb" are colour space conversion helpers
 
@@ -62,6 +101,36 @@ resulting image.
 As per the original implementation it is suggested to only decode
 to a relatively small size and then scale the result up, as it
 basically looks the same anyways.
+"""
+
+blurhash.fake_decode(blurhash, width, height, punch = 1.0, show_time = False):
+"""
+Decodes the given blurhash to a list of (x, y, (r,g,b)) tuples, with one tuple per element,
+where x and y are the centerpoint of each element, and r, g, b
+describe the color of the tile to render.
+
+The punch parameter can be used to de- or increase the contrast of the
+resulting image.
+
+Contrary to the original implementation, the size at which you render has
+very little impact on performance.
+"""
+
+blurhash_show(blurhash, width, height, punch = 1.0, show_time = False):
+"""
+Draws and shows an image using the original pure Python blurhash method.
+Optionally print the run time for the command with 'show_time = True'
+"""
+
+blurhash_show_fake(blurhash, width, height, punch = 1.0, blur_divisor = 4, show_time = False):
+"""
+Draws and shows an image using the fake blurhash method, decoding to a short list of tuples.
+Optionally print the run time for the command with 'show_time = True'
+"""
+
+blurhash_components(blurhash):
+"""
+Decodes and returns the number of x and y components in the given blurhash.
 """
 
 blurhash.srgb_to_linear(value):
