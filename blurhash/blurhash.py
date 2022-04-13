@@ -273,7 +273,7 @@ def blurhash_show(blurhash, width, height, punch=1.0, show_time=False):
 
 
 def blurhash_show_fake(
-    blurhash, width, height, punch=1.0, blur_divisor=4, show_time=False
+    blurhash, width, height, punch=1.0, blur_factor=0.25, show_time=False
 ):
     """
     Draws and shows an image using the fake blurhash method, decoding to a short list of tuples.
@@ -294,7 +294,7 @@ def blurhash_show_fake(
             tile, (int((elem[0]) - elem_width / 2), int((elem[1]) - elem_height / 2))
         )
     final = canvas.filter(
-        ImageFilter.GaussianBlur(elem_width / blur_divisor)
+        ImageFilter.GaussianBlur(elem_width * blur_factor)
     )
     t1 = time()
     if show_time:
